@@ -37,6 +37,7 @@
 #include <linux/fcntl.h>
 #include <linux/in.h>
 #include <linux/in6.h>
+#include <linux/un.h>
 #include <linux/netlink.h>
 
 #include <asm/socket.h>
@@ -200,7 +201,7 @@ static int unix_create_uri (char * uri, int count, enum shim_sock_state state,
 }
 
 static int netlink_create_uri (char * uri, int count, enum shim_sock_state state,
-                            unsigned int nl_pid)
+                            unsigned int nl_pid, int nl_protocol)
 {
     int bytes = 0;
 
@@ -214,13 +215,12 @@ static int netlink_create_uri (char * uri, int count, enum shim_sock_state state
         case SOCK_LISTENED:
         case SOCK_ACCEPTED:
         case SOCK_CONNECTED:
-            bytes = snprintf(uri, count, "nl:%u", nl_pid);
+            bytes = snprintf(uri, count, "nl:%u.%u", nl_pid, nl_protocol);
             break;
 
         default:
             return -ENOTCONN;
     }
-
     return bytes == count ? -ENAMETOOLONG : bytes;
 }
 
@@ -492,7 +492,7 @@ static int create_socket_uri (struct shim_handle * hdl)
     if (sock->domain == AF_NETLINK) {
         char uri_buf[32];
         int bytes = netlink_create_uri(uri_buf, 32, sock->sock_state,
-                                    sock->addr.nl.pid);
+                                    sock->addr.nl.pid, sock->protocol);
         if (bytes < 0)
             return bytes;
 
@@ -1607,6 +1607,8 @@ static int __do_setsockopt (struct shim_handle * hdl, int level, int optname,
             case SO_SNDTIMEO:
             case SO_REUSEADDR:
                 goto query;
+            case SO_PASSCRED:
+            	goto ret;
             default:
                 goto unknown;
         }
@@ -1701,7 +1703,7 @@ query:
 set:
     if (!DkStreamAttributesSetByHandle(hdl->pal_handle, attr))
         return -PAL_ERRNO;
-
+ret:
     return 0;
 }
 
