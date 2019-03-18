@@ -91,7 +91,7 @@ int read_enclave_sigstruct (int sigfile, sgx_arch_sigstruct_t * sig);
 int create_enclave(sgx_arch_secs_t * secs,
                    unsigned long base,
                    unsigned long size,
-                   sgx_arch_token_t * token);
+                   sgx_arch_sigstruct_t * sigstruct);
 
 enum sgx_page_type { SGX_PAGE_SECS, SGX_PAGE_TCS, SGX_PAGE_REG };
 int add_pages_to_enclave(sgx_arch_secs_t * secs,

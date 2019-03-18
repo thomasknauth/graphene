@@ -5,3 +5,5 @@ loader.debug_type = inline
 fs.mount.lib.type = chroot
 fs.mount.lib.path = /lib
 fs.mount.lib.uri = file:$(LIBCDIR)
+
+sgx.disable_avx = 1

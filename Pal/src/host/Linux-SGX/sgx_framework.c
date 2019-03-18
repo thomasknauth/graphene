@@ -12,7 +12,7 @@
 
 int gsgx_device = -1;
 int isgx_device = -1;
-#define ISGX_FILE "/dev/isgx"
+#define ISGX_FILE "/dev/sgx"
 
 void * zero_page;
 
@@ -125,7 +125,7 @@ bool is_wrfsbase_supported (void)
 int create_enclave(sgx_arch_secs_t * secs,
                    unsigned long baseaddr,
                    unsigned long size,
-                   sgx_arch_token_t * token)
+                   sgx_arch_sigstruct_t * sigstruct)
 {
     int flags = MAP_SHARED;
 
@@ -142,9 +142,9 @@ int create_enclave(sgx_arch_secs_t * secs,
     secs->size = pagesize;
     while (secs->size < size)
         secs->size <<= 1;
-    secs->ssaframesize = get_ssaframesize(token->attributes.xfrm) / pagesize;
-    secs->miscselect = token->miscselect_mask;
-    memcpy(&secs->attributes, &token->attributes,
+    secs->ssaframesize = get_ssaframesize(sigstruct->attributes.xfrm) / pagesize;
+    secs->miscselect = sigstruct->miscselect_mask;
+    memcpy(&secs->attributes, &sigstruct->attributes,
            sizeof(sgx_arch_attributes_t));
     /* Do not initialize secs->mrsigner and secs->mrenclave here as they are
      * not used by ECREATE to populate the internal SECS. SECS's mrenclave is
@@ -323,7 +323,14 @@ int init_enclave(sgx_arch_secs_t * secs,
         SGX_DBG(DBG_I, " %02x", sigstruct->enclave_hash[i]);
     SGX_DBG(DBG_I, "\n");
 
-#if SDK_DRIVER_VERSION >= KERNEL_VERSION(1, 8, 0)
+#if SDK_DRIVER_VERSION >= KERNEL_VERSION(2, 4, 0)
+    struct sgx_enclave_init param = {
+        .addr           = enclave_valid_addr,
+        .sigstruct      = (uint64_t) sigstruct
+    };
+    int ret = INLINE_SYSCALL(ioctl, 3, isgx_device, SGX_IOC_ENCLAVE_INIT,
+                             &param);
+#elif SDK_DRIVER_VERSION >= KERNEL_VERSION(1, 8, 0)
     struct sgx_enclave_init param = {
         .addr           = enclave_valid_addr,
         .sigstruct      = (uint64_t) sigstruct,

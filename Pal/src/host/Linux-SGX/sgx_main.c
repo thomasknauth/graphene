@@ -290,11 +290,11 @@ int initialize_enclave (struct pal_enclave * enclave)
     else
         enclave->baseaddr = heap_min = 0;
 
-    TRY(read_enclave_token, enclave->token, &enclave_token);
+    //TRY(read_enclave_token, enclave->token, &enclave_token);
     TRY(read_enclave_sigstruct, enclave->sigfile, &enclave_sigstruct);
 
     TRY(create_enclave,
-        &enclave_secs, enclave->baseaddr, enclave->size, &enclave_token);
+        &enclave_secs, enclave->baseaddr, enclave->size, &enclave_sigstruct);
 
     enclave->baseaddr = enclave_secs.baseaddr;
     enclave->size = enclave_secs.size;
@@ -762,15 +762,16 @@ static int load_enclave (struct pal_enclave * enclave,
     }
 
     uri = alloc_concat(uri, strlen(uri) - 4, ".token", -1);
-    enclave->token = INLINE_SYSCALL(open, 3, uri + 5, O_RDONLY|O_CLOEXEC, 0);
-    if (IS_ERR(enclave->token)) {
-        SGX_DBG(DBG_E, "cannot open token \'%s\'. Use \'"
-                PAL_FILE("pal-sgx-get-token")
-                "\' on the runtime host, or run \'make SGX_RUN=1\' "
-                "in the Graphene source, to create the token file.\n",
-                uri);
-        return -EINVAL;
-    }
+    /* enclave->token = INLINE_SYSCALL(open, 3, uri + 5, O_RDONLY|O_CLOEXEC, 0); */
+    /* if (IS_ERR(enclave->token)) { */
+    /*     SGX_DBG(DBG_E, "cannot open token \'%s\'. Use \'" */
+    /*             PAL_FILE("pal-sgx-get-token") */
+    /*             "\' on the runtime host, or run \'make SGX_RUN=1\' " */
+    /*             "in the Graphene source, to create the token file.\n", */
+    /*             uri); */
+    /*     return -EINVAL; */
+    /* } */
+    enclave->token = 0;
 
     /* Initialize the enclave */
     ret = initialize_enclave(enclave);
