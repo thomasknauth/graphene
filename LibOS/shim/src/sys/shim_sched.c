@@ -36,6 +36,7 @@ int shim_do_sched_yield (void)
 int shim_do_sched_getaffinity (pid_t pid, size_t len,
                                __kernel_cpu_set_t * user_mask_ptr)
 {
+#ifndef ZMQ_TEST_CASE
     __UNUSED(pid);
     int ncpus = PAL_CB(cpu_info.cpu_num);
 
@@ -60,4 +61,31 @@ int shim_do_sched_getaffinity (pid_t pid, size_t len,
     /* imitate the Linux kernel implementation
      * See SYSCALL_DEFINE3(sched_getaffinity) */
     return bitmask_size_in_bytes;
+#else
+    /* This works around a bug in OpenBLAS
+     * (https://github.com/xianyi/OpenBLAS/blob/0bf6d74e5f9855ddf2028dcc099ee58e4f13446b/driver/others/memory.c#L219)
+     * which calls sched_getaffinity without allocating space for the
+     * user_mask_ptr parameter. */
+    return -EFAULT;
+#endif
 }
+
+#ifdef ZMQ_TEST_CASE
+int shim_do_sched_getparam(pid_t pid, struct __kernel_sched_param * param) {
+    memset(param, 0, sizeof(*param));
+    return 0;
+}
+
+int shim_do_sched_setparam(pid_t pid,
+                           struct __kernel_sched_param * param) {
+    return 0;
+}
+
+int shim_do_sched_getscheduler(pid_t pid) {
+    return 0;
+}
+
+int shim_do_sched_setscheduler(pid_t pid, int policy, struct __kernel_sched_param * param) {
+    return 0;
+}
+#endif

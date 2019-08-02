@@ -19,6 +19,10 @@ ARFLAGS	=
 CRYPTO_PROVIDER = mbedtls
 CFLAGS += -DCRYPTO_USE_MBEDTLS
 
+ifeq ($(ZMQ_TEST_CASE),1)
+	CFLAGS += -DZMQ_TEST_CASE
+endif
+
 ifeq ($(WERROR),1)
 CFLAGS += -Werror
 endif

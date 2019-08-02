@@ -288,7 +288,6 @@ void pal_linux_main(char * uptr_args, uint64_t args_size,
     pal_sec.uid = sec_info.uid;
     pal_sec.gid = sec_info.gid;
 
-
     /* set up page allocator and slab manager */
     init_slab_mgr(pagesz);
     init_untrusted_slab_mgr();
@@ -487,7 +486,11 @@ void _DkGetCPUInfo (PAL_CPU_INFO * ci)
      * best option we have so far to get the cpu number  */
 
     cpuid(0xb, 1, words);
+#ifdef ZMQ_TEST_CASE
+    ci->cpu_num = 1;
+#else
     ci->cpu_num      = BIT_EXTRACT_LE(words[PAL_CPUID_WORD_EBX], 0, 16);
+#endif
 
     cpuid(1, 0, words);
     ci->cpu_family   = BIT_EXTRACT_LE(words[PAL_CPUID_WORD_EAX],  8, 12) +

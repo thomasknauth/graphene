@@ -335,7 +335,7 @@ done_finding:
             continue;
 
         debug("handle %s is polled\n", qstrgetstr(&p->handle->uri));
-
+        
         p->flags |= KNOWN_R|KNOWN_W;
 
         if (ret_events[i] & PAL_WAIT_ERROR) {

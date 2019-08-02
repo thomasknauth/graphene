@@ -126,6 +126,7 @@ static void free_dentry (struct shim_dentry *dent) {
  *
  */
 void put_dentry (struct shim_dentry * dent) {
+#ifndef ZMQ_TEST_CASE
     int count = REF_DEC(dent->ref_count);
     assert (count >= 0);
     // We don't expect this to commonly free a dentry, and may represent a
@@ -137,7 +138,11 @@ void put_dentry (struct shim_dentry * dent) {
         assert(LIST_EMPTY(dent, siblings));
         free_dentry(dent);
     }
-
+#else
+    /* For the Federated Learning use case, we completely disable this
+     * function. Ultimately, someone should debug the reference counting. */
+    (void) free_dentry;
+#endif
     return;
 }
 

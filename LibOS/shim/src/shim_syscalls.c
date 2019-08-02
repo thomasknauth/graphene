@@ -604,17 +604,29 @@ SHIM_SYSCALL_PASSTHROUGH (getpriority, 2, int, int, which, int, who)
 
 SHIM_SYSCALL_PASSTHROUGH (setpriority, 3, int, int, which, int, who, int,
                           niceval)
+#ifdef ZMQ_TEST_CASE
+DEFINE_SHIM_SYSCALL (sched_setparam, 2, shim_do_sched_setparam, int, pid_t, pid,
+                          struct __kernel_sched_param *, param)
 
+DEFINE_SHIM_SYSCALL (sched_getparam, 2, shim_do_sched_getparam, int, pid_t, pid,
+                     struct __kernel_sched_param *, param)
+
+DEFINE_SHIM_SYSCALL (sched_setscheduler, 3, shim_do_sched_setscheduler, int, pid_t, pid, int, policy,
+                          struct __kernel_sched_param *, param)
+
+DEFINE_SHIM_SYSCALL (sched_getscheduler, 1, shim_do_sched_getscheduler, int, pid_t, pid)
+#else
 SHIM_SYSCALL_PASSTHROUGH (sched_setparam, 2, int, pid_t, pid,
                           struct __kernel_sched_param *, param)
 
 SHIM_SYSCALL_PASSTHROUGH (sched_getparam, 2, int, pid_t, pid,
-                          struct __kernel_sched_param *, param)
+                     struct __kernel_sched_param *, param)
 
 SHIM_SYSCALL_PASSTHROUGH (sched_setscheduler, 3, int, pid_t, pid, int, policy,
                           struct __kernel_sched_param *, param)
 
 SHIM_SYSCALL_PASSTHROUGH (sched_getscheduler, 1, int, pid_t, pid)
+#endif
 
 SHIM_SYSCALL_PASSTHROUGH (sched_get_priority_max, 1, int, int, policy)
 

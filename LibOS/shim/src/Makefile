@@ -5,7 +5,7 @@ include ../../../Pal/src/Makefile.Host
 
 OMIT_FRAME_POINTER = no
 
-CFLAGS	= -Wall -fPIC -std=c11 -Winline -Wwrite-strings \
+CFLAGS += -Wall -fPIC -std=c11 -Winline -Wwrite-strings \
 	  -fmerge-all-constants -Wstrict-prototypes \
 	  -Werror=implicit-function-declaration \
 	  $(cc-option, -Wnull-dereference) \
@@ -64,6 +64,10 @@ CFLAGS += -DDEBUG
 ASFLAGS += -DDEBUG
 endif
 export DEBUG
+
+ifeq ($(ZMQ_TEST_CASE),1)
+	CFLAGS += -DZMQ_TEST_CASE
+endif
 
 ifeq ($(PROFILING), 1)
 CFLAGS += -DPROFILE

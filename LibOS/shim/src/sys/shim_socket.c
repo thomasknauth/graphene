@@ -414,6 +414,17 @@ static int inet_copy_addr (int domain, struct sockaddr * saddr,
         return sizeof(struct sockaddr_in6);
     }
 
+#ifdef ZMQ_TEST_CASE
+    if (domain == AF_NETLINK) {
+        struct sockaddr_nl * nl = (struct sockaddr_nl *) saddr;
+        nl->nl_family = AF_NETLINK;
+        nl->nl_pad = 0;
+        nl->nl_pid = 1234;
+        nl->nl_groups = 0;
+        return sizeof(struct sockaddr_nl);
+    }
+#endif
+    
     return sizeof(struct sockaddr);
 }
 
@@ -563,7 +574,13 @@ int shim_do_bind (int sockfd, struct sockaddr * addr, socklen_t addrlen)
         inet_rebase_port(false, sock->domain, &sock->addr.in.bind, true);
     } else if (sock->domain == AF_NETLINK) {
         struct sockaddr_nl * saddr = (struct sockaddr_nl *) addr;
+#ifndef ZMQ_TEST_CASE
     	sock->addr.nl.pid = saddr->nl_pid;
+#else
+        if (saddr->nl_pid == 0) {
+            sock->addr.nl.pid = 1234;
+        }
+#endif
     	debug("binding netlink sock, pid: %d\n", saddr->nl_pid);
     }
 
@@ -1393,8 +1410,12 @@ ssize_t shim_do_recvfrom (int sockfd, void * buf, size_t len, int flags,
 
 ssize_t shim_do_recvmsg (int sockfd, struct msghdr * msg, int flags)
 {
-    return do_recvmsg(sockfd, msg->msg_iov, msg->msg_iovlen, flags,
-                      msg->msg_name, &msg->msg_namelen);
+    ssize_t ret = do_recvmsg(sockfd, msg->msg_iov, msg->msg_iovlen, flags,
+                              msg->msg_name, &msg->msg_namelen);
+#ifdef ZMQ_TEST_CASE
+    memset(msg->msg_name, 0, msg->msg_namelen);
+#endif
+    return ret;
 }
 
 ssize_t shim_do_recvmmsg (int sockfd, struct mmsghdr * msg, size_t vlen, int flags,
