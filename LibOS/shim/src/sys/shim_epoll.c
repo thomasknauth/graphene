@@ -312,14 +312,6 @@ retry:
     if ((nread = epoll->nread))
         epoll->nwaiters++;
 
-<<<<<<< 1c5f307fec01316a95342aef5006f25b666ceca3
-    unlock(&epoll_hdl->lock);
-
-    PAL_HANDLE polled = DkObjectsWaitAny(nread ? npals + 1 : npals, pal_handles,
-                                         nread ? (timeout == -1 ? NO_TIMEOUT : (PAL_NUM) timeout) : 0);
-
-    lock(&epoll_hdl->lock);
-=======
     // Allocate space for one additional PAL_HANDLE to accommodate the special
     // events handle. Graphene monitors the special events handle to detect if the
     // epoll handle was modified while waiting for associated events. If the
