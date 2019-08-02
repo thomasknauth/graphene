@@ -323,7 +323,7 @@ retry:
     PAL_FLG * ret_events = pal_events + (npals + 1);
 
     npals = 0;
-    listp_for_each_entry(epoll_fd, &epoll->fds, list) {
+    LISTP_FOR_EACH_ENTRY(epoll_fd, &epoll->fds, list) {
         if (!epoll_fd->pal_handle)
             continue;
         pal_handles[npals] = epoll_fd->pal_handle;
@@ -340,14 +340,14 @@ retry:
     pal_events[npals] = PAL_WAIT_READ;
     ret_events[npals] = 0;
 
-    unlock(epoll_hdl->lock);
+    unlock(&epoll_hdl->lock);
     
     // TODO: Timeout must be updated in case of retries. Otherwise, we may
     // wait too long.
     uint64_t pal_timeout = timeout;
     PAL_BOL polled = DkObjectsWaitEvents(npals, pal_handles, pal_events, ret_events, pal_timeout);
     
-    lock(epoll_hdl->lock);
+    lock(&epoll_hdl->lock);
 
     if (nread)
         epoll->nwaiters--;
@@ -356,7 +356,7 @@ retry:
         goto reply;
     
     for (int i = 0; i < npals; i++) {
-        listp_for_each_entry(epoll_fd, &epoll->fds, list) {
+        LISTP_FOR_EACH_ENTRY(epoll_fd, &epoll->fds, list) {
             if (!epoll_fd->pal_handle)
                 continue;
             if(epoll_fd->pal_handle != pal_handles[i])
