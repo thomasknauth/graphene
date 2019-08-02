@@ -855,15 +855,15 @@ static int64_t nl_send (PAL_HANDLE handle, uint64_t offset, uint64_t len,
     int bytes = ocall_sock_send(handle->sock.fd, buf, len, NULL, 0);
 
     if (bytes == -PAL_ERROR_TRYAGAIN)
-        HANDLE_HDR(handle)->flags &= ~WRITEABLE(0);
+        HANDLE_HDR(handle)->flags &= ~WRITABLE(0);
 
     if (bytes < 0)
         return bytes;
 
     if (bytes == len)
-        HANDLE_HDR(handle)->flags |= WRITEABLE(0);
+        HANDLE_HDR(handle)->flags |= WRITABLE(0);
     else
-        HANDLE_HDR(handle)->flags &= ~WRITEABLE(0);
+        HANDLE_HDR(handle)->flags &= ~WRITABLE(0);
 
     return bytes;
 }
