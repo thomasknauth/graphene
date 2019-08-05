@@ -637,6 +637,7 @@ static int do_rename (struct shim_dentry * old_dent,
     if ((ret = dentry_open(old_hdl, old_dent, O_RDONLY)) < 0)
         goto out_hdl;
 
+    open_handle(old_hdl);
     old_opened = true;
 
     if (!(new_hdl = get_new_handle())) {
@@ -646,8 +647,9 @@ static int do_rename (struct shim_dentry * old_dent,
 
     if ((ret = dentry_open(new_hdl, new_dent, O_WRONLY|O_CREAT)) < 0)
         goto out_hdl;
-
+    open_handle(new_hdl);
     new_opened = true;
+    
     off_t old_offset = 0, new_offset = 0;
 
     if ((ret = handle_copy(old_hdl, &old_offset,
