@@ -235,8 +235,21 @@ void pal_linux_main(char * uptr_args, uint64_t args_size,
         zero2_start = MIN(zero2_start, pal_sec.exec_addr + pal_sec.exec_size);
     }
 
-    memset(zero1_start, 0, zero1_end - zero1_start);
-    memset(zero2_start, 0, zero2_end - zero2_start);
+    assert((((unsigned long) zero1_start ) % 4096) == 0);
+    assert((((unsigned long ) zero1_end  ) % 4096) == 0);
+    assert((((unsigned long ) zero2_start) % 4096) == 0);
+    assert((((unsigned long) zero2_end )   % 4096) == 0);
+
+    unsigned char zero_page[4096] = {0, };
+    
+    /* memset(zero1_start, 0, zero1_end - zero1_start); */
+    /* memset(zero2_start, 0, zero2_end - zero2_start); */
+    for (int i = 0; zero1_start + i * 4096 < zero1_end; ++i) {
+        assert(0 == memcmp(zero_page, zero1_start + i * 4096, 4096));
+    }
+    for (int i = 0; zero2_start + i * 4096 < zero2_end; ++i) {
+        assert(0 == memcmp(zero_page, zero2_start + i * 4096, 4096));
+    }
 
     /* relocate PAL itself */
     pal_map.l_addr = elf_machine_load_address();
