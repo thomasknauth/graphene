@@ -67,6 +67,9 @@ def gen_manifest(app_name, bin_name, g_path):
            'loader.debug_type = none\n')
   mf.write('\n')
 
+  # 8 seems sufficient to run Redis and memcached.
+  mf.write('sgx.thread_num = 8\n')
+  
   # File system setting
   mf.write('fs.mount.lib1.type = chroot\n' +
            'fs.mount.lib1.path = /graphene\n' +

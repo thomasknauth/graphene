@@ -1,7 +1,10 @@
 #!/usr/bin/env python2
-import sys,os
-import subprocess
+
+import glob
+import os
 import re
+import subprocess
+import sys
 
 def gen_dockerfile( image_name, app_name, bin_name, proj_dir):
   if not os.path.exists(proj_dir + '/Tools/build'):
@@ -40,9 +43,16 @@ def gen_dockerfile( image_name, app_name, bin_name, proj_dir):
 
   # COPY system files
   df.write('# Copy system files\n')
-  df.write('COPY Runtime/* ' + proj_dir + '/Runtime/\n')
+  # Files in Runtime/ are symlinks. Cannot COPY symlinks in the Dockerfile. As a workaround, copy
+  # resolved symlinks into temporary directory and COPY from there.
+  os.mkdir('tmpBuild')
+  # Copy resolved files (-L parameter) into temporary directory
+  subprocess.check_call('cp -L ../Runtime/* tmpBuild', shell=True)
+  df.write('COPY ' + ' '.join(map(lambda s: "Tools/" + s, glob.glob('tmpBuild/*'))) + " " + proj_dir + '/Runtime/\n')
+  
   df.write('COPY Pal/src/Makefile.Host ' + proj_dir + '/Pal/src/Makefile.Host\n')
   df.write('COPY Pal/src/host/Linux-SGX/signer/* ' + proj_dir + '/Pal/src/host/Linux-SGX/signer/\n')
+  df.write('COPY Pal/src/host/Linux-SGX/generated_offsets.py ' + proj_dir + '/Pal/src/host/Linux-SGX/\n')
 
   # COPY tools for building app instance
   df.write('# Copy tools for building app instance\n')
@@ -103,6 +113,10 @@ if __name__ == '__main__':
   # application name may contain '/', remove it
   app_name = app_name.split('/')[0]
 
+  # Need to pull the image first. Otherwise, the following docker inspect fails if the image is not
+  # present locally.
+  subprocess.check_call('docker pull ' + image_name, shell=True)
+  
   inspect_cmd = 'sudo docker inspect --format \'{{.Config.Cmd}}\' ' + image_name
   res = subprocess.check_output(inspect_cmd, shell=True).strip()
 
@@ -131,6 +145,9 @@ if __name__ == '__main__':
   # STEP 3: Building new docker image with generated Dockerfile
   os.chdir('..')
   os.system('sudo docker build -f Tools/build/Dockerfile.' + app_name + ' -t gsc_' + app_name + ' .\n')
+
+  # Delete the temporary directory from earlier only after building the Docker image.
+  subprocess.check_call('rm -rf Tools/tmpBuild', shell=True)
 
   # STEP 4: Run GSC with the target app
   os.system('sudo docker run -i -t' + docker_str +' --device=/dev/gsgx --device=/dev/isgx ' +
