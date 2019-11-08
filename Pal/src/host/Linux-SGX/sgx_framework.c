@@ -226,6 +226,10 @@ int create_enclave(sgx_arch_secs_t * secs,
     return 0;
 }
 
+/**
+ *
+ * @param user_addr Address of source page for EADD or NULL if wanting to add a zero page.
+ */
 int add_pages_to_enclave(sgx_arch_secs_t * secs,
                          void * addr, void * user_addr,
                          unsigned long size,
@@ -275,14 +279,32 @@ int add_pages_to_enclave(sgx_arch_secs_t * secs,
         SGX_DBG(DBG_I, "adding pages to enclave: %p-%p [%s:%s] (%s)%s\n",
                 addr, addr + size, t, p, comment, m);
 
-
 #if SDK_DRIVER_VERSION >= KERNEL_VERSION(1, 8, 0)
     struct sgx_enclave_add_page param = {
         .addr       = secs->base + (uint64_t) addr,
-        .src        = (uint64_t) (user_addr ? : zero_page),
+        .src        = (uint64_t) (user_addr),
         .secinfo    = (uint64_t) &secinfo,
         .mrmask     = skip_eextend ? 0 : (uint16_t) -1,
     };
+
+    // Graphene does not EEXTEND heap pages, i.e., if skip_eextend is true, we are EADDing heap
+    // pages. Heap pages use a single zero page for their source. The zero page is allocated by the
+    // corresponding SGX driver to avoid the extra copy from user to kernel space.
+    if (skip_eextend) {
+        // At this point we know we want to add a bunch of zeroed heap pages. We creatively
+        // repurpose existing members of struc sgx_enclave_add_page to not change the struct's
+        // layout and preserve compatibility with other code.
+
+        // Store the size of the heap region to be added in .src. .src is not needed here, since the
+        // SGX driver will probive a source page for the EADD.
+        param.src = size;
+        // Make the code in this function believe we are adding a single page. This preserves most
+        // of the existing logic here.
+        size = pagesize;
+        // The corresponding SGX driver knows that if mrmask is neither 0 nor 0xFFFF, it is handling
+        // the special case of EADDing a range of zero pages.
+        param.mrmask = 1;
+    }
 
     uint64_t added_size = 0;
     while (added_size < size) {
@@ -294,7 +316,7 @@ int add_pages_to_enclave(sgx_arch_secs_t * secs,
         }
 
         param.addr += pagesize;
-        if (param.src != (uint64_t) zero_page) param.src += pagesize;
+        if (param.src) param.src += pagesize;
         added_size += pagesize;
     }
 #else
